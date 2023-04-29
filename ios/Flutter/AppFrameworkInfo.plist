@@ -22,5 +22,18 @@
   <string>1.0</string>
   <key>MinimumOSVersion</key>
   <string>11.0</string>
+  <!-- add NSLocationWhenInUseUsageDescription -->
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>Allow access to your location</string>
+  <!-- add NSLocationAlwaysUsageDescription -->
+  <key>NSLocationAlwaysUsageDescription</key>
+  <string>Allow access to your location</string>
+  <!-- add NSLocationAlwaysAndWhenInUseUsageDescription -->
+  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+  <string>Allow access to your location</string>
+  <!-- add NSLocationUsageDescription -->
+  <key>NSLocationUsageDescription</key>
+  <string>Allow access to your location</string>
+  
 </dict>
 </plist>
