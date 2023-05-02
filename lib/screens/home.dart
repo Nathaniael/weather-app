@@ -20,6 +20,25 @@ class _WeatherAppState extends State<WeatherApp> {
   String icon = "";
   String error = "";
   String location = "";
+  List<dynamic> hourlyForecast = [];
+
+  AssetImage getBackgroundImage(String description) {
+    if (description.contains('rain')) {
+      return const AssetImage('assets/images/rainy.png');
+    } else if (description.contains('sun') || description.contains('clear')) {
+      return const AssetImage('assets/images/sunny.png');
+    } else if (description.contains('snow') || description.contains('ice')) {
+      return const AssetImage('assets/images/snowy.png');
+    } else if (description.contains('thunder')) {
+      return const AssetImage('assets/images/thunder.png');
+    } else if (description.contains('cloud') ||
+        description.contains('mist') ||
+        description.contains('overcast')) {
+      return const AssetImage('assets/images/cloudy.png');
+    } else {
+      return const AssetImage('assets/images/default.png');
+    }
+  }
 
   Future getWeather() async {
     setState(() {
@@ -33,9 +52,7 @@ class _WeatherAppState extends State<WeatherApp> {
         Uri.parse(
             "http://api.weatherapi.com/v1/forecast.json?q=$cityName&key=e1b4726e4af54395a9e170809232303"),
         headers: requestHeaders);
-    // if error occurs, print error
     if (response.statusCode != 200) {
-      print(response.statusCode);
       setState(() {
         error = "Sorry, we don't have data for this city";
         temperature = "";
@@ -44,18 +61,12 @@ class _WeatherAppState extends State<WeatherApp> {
         windSpeed = "";
         icon = "";
         location = "";
+        hourlyForecast = [];
       });
       return;
     }
     var results = await jsonDecode(response.body);
-
-    // try {
-    //   var response = await Dio().get(
-    //       'http://api.weatherapi.com/v1/forecast.json?q=$cityName&key=e1b4726e4af54395a9e170809232303');
-    //   print(response);
-    // } catch (e) {
-    //   print(e);
-    // }
+    var forecastData = results["forecast"]["forecastday"];
 
     setState(() {
       temperature = (results["current"]["temp_c"]).toString();
@@ -65,6 +76,7 @@ class _WeatherAppState extends State<WeatherApp> {
       icon = results["current"]["condition"]["icon"];
       location =
           results["location"]["name"] + ", " + results["location"]["country"];
+      hourlyForecast = forecastData[0]["hour"];
     });
   }
 
@@ -76,9 +88,6 @@ class _WeatherAppState extends State<WeatherApp> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          // Permissions are denied.
-          // You can try requesting permissions again here
-          // or continue to use the app without location services.
           return Future.error('Location permissions are denied');
         }
       }
@@ -86,7 +95,6 @@ class _WeatherAppState extends State<WeatherApp> {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-      print(position);
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
@@ -105,154 +113,212 @@ class _WeatherAppState extends State<WeatherApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: Colors.blueGrey[800],
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            // create a top search bar with a text field and a search button to search for a city on the same row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  width: 300.0,
-                  child: TextField(
-                    onSubmitted: (String input) {
-                      setState(() {
-                        cityName = input;
-                        getWeather();
-                      });
-                    },
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 25.0,
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: "Enter City Name",
-                      hintStyle: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18.0,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+        resizeToAvoidBottomInset: false,
+        backgroundColor: Colors.transparent,
+        body: Container(
+            decoration: BoxDecoration(
+                image: DecorationImage(
+              image: getBackgroundImage(description),
+              fit: BoxFit.cover,
+            )),
+            child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
                 ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.search,
-                    color: Colors.white,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      getWeather();
-                    });
-                  },
-                ),
-              ],
-            ),
-            // if error occurs, display error message
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.redAccent,
-                fontSize: 20.0,
-              ),
-            ),
-            Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    location,
-                    style: const TextStyle(
-                      fontSize: 30.0,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    "$temperature°C",
-                    style: const TextStyle(
-                      fontSize: 80.0,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    description.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 30.0,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const Icon(
-                        Icons.opacity,
-                        color: Colors.white,
-                        size: 30.0,
-                      ),
-                      const SizedBox(
-                        width: 10.0,
-                      ),
-                      Text(
-                        "$humidity%",
-                        style: const TextStyle(
-                          fontSize: 20.0,
-                          color: Colors.white,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        SizedBox(
+                          width: 300.0,
+                          child: TextField(
+                            onSubmitted: (String input) {
+                              setState(() {
+                                cityName = input;
+                                getWeather();
+                              });
+                            },
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 25.0,
+                            ),
+                            decoration: const InputDecoration(
+                              hintText: "Enter City Name",
+                              hintStyle: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18.0,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const Icon(
-                        Icons.air,
-                        color: Colors.white,
-                        size: 30.0,
-                      ),
-                      const SizedBox(
-                        width: 10.0,
-                      ),
-                      Text(
-                        "$windSpeed km/h",
-                        style: const TextStyle(
-                          fontSize: 20.0,
-                          color: Colors.white,
+                        IconButton(
+                          icon: const Icon(
+                            Icons.search,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              getWeather();
+                            });
+                          },
                         ),
+                      ],
+                    ),
+                    // if error occurs, display error message
+                    Text(
+                      error,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 20.0,
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Image.network(
-              "http://cdn.weatherapi.com/weather/64x64/day/113.png",
-              color: Colors.white,
-              height: 100.0,
-            ),
-          ],
-        ),
+                    ),
+                    Column(
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            location,
+                            style: const TextStyle(
+                              fontSize: 30.0,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            "$temperature°C",
+                            style: const TextStyle(
+                              fontSize: 80.0,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            description.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 30.0,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              const Icon(
+                                Icons.opacity,
+                                color: Colors.white,
+                                size: 30.0,
+                              ),
+                              const SizedBox(
+                                width: 10.0,
+                              ),
+                              Text(
+                                "$humidity%",
+                                style: const TextStyle(
+                                  fontSize: 20.0,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              const Icon(
+                                Icons.air,
+                                color: Colors.white,
+                                size: 30.0,
+                              ),
+                              const SizedBox(
+                                width: 10.0,
+                              ),
+                              Text(
+                                "$windSpeed km/h",
+                                style: const TextStyle(
+                                  fontSize: 20.0,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    Image.network(
+                      icon.replaceFirst('//', 'http://'),
+                      color: Colors.white,
+                      height: 100.0,
+                    ),
+                    Container(
+                      height: 180.0,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: hourlyForecast.length,
+                        itemBuilder: (context, index) {
+                          var hour = hourlyForecast[index];
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white70,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              width: 120.0,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: <Widget>[
+                                  Text(
+                                    hour["time"].substring(11, 16),
+                                    style: const TextStyle(
+                                        fontSize: 18.0,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 10.0),
+                                  Image.network(
+                                    hour["condition"]["icon"]
+                                        .replaceFirst('//', 'http://'),
+                                    height: 50.0,
+                                  ),
+                                  const SizedBox(height: 10.0),
+                                  Text(
+                                    '${hour["temp_c"].toStringAsFixed(0)}°C',
+                                    style: const TextStyle(fontSize: 18.0),
+                                  ),
+                                  const SizedBox(height: 10.0),
+                                  Text(
+                                    hour["condition"]["text"],
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(fontSize: 14.0),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ))),
       ),
     );
   }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:weatherapp/screens/home.dart';
+import 'package:flutter/services.dart';
 
 void main() {
+  SystemChrome.setEnabledSystemUIMode([SystemUiOverlay.bottom] as SystemUiMode);
   runApp(const MyApp());
 }
 
@@ -15,7 +17,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: WeatherApp(),
+      home: const WeatherApp(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
